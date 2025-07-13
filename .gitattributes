@@ -1,0 +1,2 @@
+KGQA/ltp-models/**/*.model filter=lfs diff=lfs merge=lfs -text
+KGQA/ltp-models/ltp_data_v3.4.0 filter=lfs diff=lfs merge=lfs -text
