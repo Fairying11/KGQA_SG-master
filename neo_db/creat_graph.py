@@ -1,69 +1,58 @@
-from neo_db.config import driver
-import os
+# neo_db/create_graph.py
+import json
 import logging
+from config import driver
 
-# 配置日志记录
+# 配置日志（对应步骤2-14、2-26）
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def create_graph():
-    try:
-        with driver.session() as session:
-            # 删除所有节点和关系
-            session.run("MATCH (n) DETACH DELETE n")
-            logging.info("Delete all nodes and relationships")
+def import_baike_data(file_path):
+    """导入百度百科人物数据（含实体和关系）"""
+    with driver.session() as session:
+        # 清空现有数据（首次导入时使用）
+        session.run("MATCH (n) DETACH DELETE n")
+        logging.info("已清空数据库现有数据")
 
-            # 获取当前脚本所在目录
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            # 构建文件的绝对路径，向上一级目录然后进入raw_data目录
-            file_path = os.path.join(script_dir, '../raw_data/triples_processed.txt')
+        with open(file_path, 'r', encoding='utf-8') as f:  # 处理UTF-8编码，对应步骤2-18
+            for line in f:
+                try:
+                    data = json.loads(line.strip())
+                    name = data["name"]
 
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        # 跳过空行
-                        if not line.strip():
+                    # 创建人物实体节点（对应步骤2-14）
+                    session.run("""
+                        MERGE (p:Person {name: $name})
+                        SET p.summary = $summary,
+                            p.basicinfo = $basicinfo,
+                            p.baike_url = $baike_url,
+                            p.pic = $pic
+                    """, name=name,
+                       summary=data.get("summary", ""),
+                       basicinfo=data.get("basicinfo", {}),
+                       baike_url=data.get("baike_url", ""),
+                       pic=data.get("pic", ""))
+                    logging.info(f"已导入实体: {name}")
+
+                    # 导入人物关系（对应步骤2-26）
+                    for rel in data.get("peoplerelations", []):
+                        # 解析关系数据（格式："姓名1#关系#姓名2#地址"，对应步骤2-20）
+                        parts = rel.split('#')
+                        if len(parts) < 3:
+                            logging.warning(f"无效关系数据: {rel}")
                             continue
+                        name1, relation, name2 = parts[0], parts[1], parts[2]
 
-                        relation_array = line.strip().split(',')
-                        logging.debug(f"Processing line: {relation_array}")
-
-                        # 确保数据有足够的元素
-                        if len(relation_array) < 5:
-                            logging.warning(f"跳过不完整的行: {relation_array}")
-                            continue
-
-                        # 创建节点
-                        session.run("MERGE (p:Person {cate:$cate, Name:$name})",
-                                    cate=relation_array[3], name=relation_array[0])
-                        session.run("MERGE (p:Person {cate:$cate, Name:$name})",
-                                    cate=relation_array[4], name=relation_array[1])
-
-                        # 创建关系 - 使用参数化查询避免注入风险
-                        rel_type = relation_array[2]
-                        # 确保关系类型是有效的Cypher标识符
-                        if not rel_type.isidentifier():
-                            logging.warning(f"无效的关系类型: {rel_type}")
-                            continue
-
-                        # 使用参数化查询创建关系
-                        query = (
-                            f"MATCH (e:Person {{Name: $e_name}}), (cc:Person {{Name: $cc_name}}) "
-                            f"MERGE (e)-[r:{rel_type} {{relation: $rel}}]->(cc) "
-                            "RETURN r"
-                        )
-                        session.run(query,
-                                    e_name=relation_array[0],
-                                    cc_name=relation_array[1],
-                                    rel=relation_array[2])
-
-            except FileNotFoundError:
-                logging.error(f"错误: 文件未找到 - {file_path}")
-                logging.error("请确保raw_data目录存在且包含triples_processed.txt文件")
-            except Exception as e:
-                logging.error(f"发生错误: {e}")
-
-    except Exception as e:
-        logging.error(f"连接数据库时发生错误: {e}")
+                        # 创建关系
+                        session.run("""
+                            MATCH (a:Person {name: $name1}), (b:Person {name: $name2})
+                            MERGE (a)-[r:RELATION {type: $relation}]->(b)
+                        """, name1=name1, name2=name2, relation=relation)
+                        logging.info(f"已导入关系: {name1} -[{relation}]-> {name2}")
+                except Exception as e:
+                    logging.error(f"处理数据时出错: {e}，数据行: {line}")
 
 if __name__ == "__main__":
-    create_graph()
+    # 导入主要人物和补充人物数据（对应步骤2-16、2-17）
+    import_baike_data("../raw_data/baike_data.txt")
+    import_baike_data("../raw_data/baike_append_data.txt")
+    driver.close()

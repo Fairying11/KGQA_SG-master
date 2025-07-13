@@ -1,104 +1,65 @@
-from flask import Flask, render_template, request, jsonify
-from flask_caching import Cache
-from datetime import timedelta
+from flask import Flask, request, jsonify, render_template
+from neo_db.config import driver
 import logging
-from neo_db.query_graph import query, get_KGQA_answer, get_answer_profile
-from KGQA.ltp import get_target_array
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 1  # 关闭静态文件缓存
 
-# 初始化缓存
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
-cache.init_app(app)
+# 配置日志
+logging.basicConfig(level=logging.INFO)
 
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
-def index(name=None):
-    """首页路由"""
+def query_neo4j(cypher, params):
+    """通用查询函数（对应步骤2-29、2-30）"""
     try:
-        return render_template('index.html', name=name)
+        with driver.session() as session:
+            return session.run(cypher, params).data()
     except Exception as e:
-        logger.error(f"首页渲染失败: {str(e)}")
-        return jsonify({"error": f"页面渲染失败: {str(e)}"}), 500
+        logging.error(f"查询失败: {e}")
+        return []
 
-@app.route('/search', methods=['GET', 'POST'])
-def search():
-    """搜索页面路由"""
-    try:
-        return render_template('search.html')
-    except Exception as e:
-        logger.error(f"搜索页面渲染失败: {str(e)}")
-        return jsonify({"error": f"页面渲染失败: {str(e)}"}), 500
+# 实体属性查询接口（对应步骤2-29、示例2-32）
+@app.route('/star/attribute', methods=['POST'])
+def get_entity_attr():
+    keyword = request.json.get('keyword')
+    if not keyword:
+        return jsonify({"status": 400, "respon": "缺少关键字"})
 
-@app.route('/KGQA', methods=['GET', 'POST'])
-def KGQA():
-    """知识图谱问答页面路由"""
-    try:
-        return render_template('KGQA.html')
-    except Exception as e:
-        logger.error(f"KGQA页面渲染失败: {str(e)}")
-        return jsonify({"error": f"页面渲染失败: {str(e)}"}), 500
+    cypher = """
+    MATCH (p:Person {name: $keyword})
+    RETURN p.name AS name, p.summary AS summary, p.basicinfo AS basicInfo, p.pic AS pic
+    """
+    result = query_neo4j(cypher, {"keyword": keyword})
+    return jsonify({"status": 200, "respon": result[0]}) if result else jsonify({"status": 404})
 
-@app.route('/get_profile', methods=['GET', 'POST'])
-def get_profile():
-    """获取人物资料接口"""
-    try:
-        name = request.args.get('character_name')
-        if not name:
-            return jsonify({"error": "请提供人物名称"}), 400
+# 关系查询接口（对应步骤2-30、示例2-35）
+@app.route('/relationship', methods=['POST'])
+def get_relations():
+    keyword = request.json.get('keyword')
+    if not keyword:
+        return jsonify({"status": 400, "respon": "缺少关键字"})
 
-        json_data = get_answer_profile(name)
-        return jsonify(json_data)
-    except Exception as e:
-        logger.error(f"获取人物资料失败: {str(e)}")
-        return jsonify({"error": f"服务器内部错误: {str(e)}"}), 500
+    cypher = """
+    MATCH (s:Person {name: $keyword})-[r:RELATION]->(o:Person)
+    RETURN s.name AS source, o.name AS target, r.type AS relation, id(s) AS s_id, id(o) AS o_id
+    """
+    result = query_neo4j(cypher, {"keyword": keyword})
+    nodes = [{"id": r["s_id"], "text": r["source"]} for r in result] + \
+            [{"id": r["o_id"], "text": r["target"]} for r in result]
+    links = [{"from": r["s_id"], "to": r["o_id"], "text": r["relation"]} for r in result]
+    return jsonify({"status": 200, "respon": {"nodes": nodes, "lines": links}})
 
-@app.route('/KGQA_answer', methods=['GET', 'POST'])
-def KGQA_answer():
-    """知识图谱问答接口"""
-    try:
-        question = request.args.get('name')
-        if not question:
-            return jsonify({"error": "请提供问题"}), 400
+# 页面路由
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-        json_data = get_KGQA_answer(get_target_array(str(question)))
-        return jsonify(json_data)
-    except Exception as e:
-        logger.error(f"处理问答请求失败: {str(e)}")
-        return jsonify({"error": f"服务器内部错误: {str(e)}"}), 500
+@app.route('/search')
+def search_page():
+    return render_template('search.html')
 
-@app.route('/search_name', methods=['GET', 'POST'])
-def search_name():
-    """搜索人物关系接口"""
-    try:
-        name = request.args.get('name')
-        if not name:
-            return jsonify({"error": "请提供人物名称"}), 400
-
-        json_data = query(str(name))
-        return jsonify(json_data)
-    except Exception as e:
-        logger.error(f"搜索人物关系失败: {str(e)}")
-        return jsonify({"error": f"服务器内部错误: {str(e)}"}), 500
-
-@app.route('/get_all_relation', methods=['GET', 'POST'])
-@cache.cached(timeout=300)  # 缓存5分钟
-def get_all_relation():
-    """获取所有关系页面"""
-    try:
-        return render_template('all_relation.html')
-    except Exception as e:
-        logger.error(f"获取所有关系页面失败: {str(e)}")
-        return jsonify({"error": f"页面渲染失败: {str(e)}"}), 500
+@app.route('/KGQA')
+def kgqa_page():
+    return render_template('KGQA.html')
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5001, debug=True)  # 避免与Neo4j端口冲突{insert\_element\_0\_}
