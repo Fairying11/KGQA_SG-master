@@ -1,11 +1,14 @@
 from neo_db.config import driver
 import codecs
-import os
 import json
 
-CA_LIST = {"魏国":0,"蜀国":1,"吴国":2,"群雄":3}
+CA_LIST = {"魏国": 0, "蜀国": 1, "吴国": 2, "群雄": 3}
 
 def get_neo4j_data():
+    """
+    从Neo4j数据库中获取数据
+    :return: 查询结果列表
+    """
     def run_query(tx):
         result = tx.run("MATCH (p)-[r]->(n:Person) "
                         "RETURN p.Name, r.relation, n.Name, p.cate, n.cate")
@@ -16,13 +19,18 @@ def get_neo4j_data():
     return data
 
 def get_json_data(data):
+    """
+    将Neo4j数据转换为JSON格式
+    :param data: Neo4j查询结果列表
+    :return: JSON格式的数据
+    """
     json_data = {'data': [], "links": []}
     d = []
 
     for i in data:
         d.append(i["p.Name"] + "_" + i["p.cate"])
         d.append(i["n.Name"] + "_" + i["n.cate"])
-        d = list(set(d))
+    d = list(set(d))
 
     name_dict = {}
     count = 0
@@ -48,5 +56,5 @@ if __name__ == "__main__":
     data = get_neo4j_data()
     json_data = get_json_data(data)
 
-    f = codecs.open('../static/data.json', 'w+', 'utf-8')
-    f.write(json.dumps(json_data, ensure_ascii=False))
+    with codecs.open('../static/data.json', 'w+', 'utf-8') as f:
+        f.write(json.dumps(json_data, ensure_ascii=False))

@@ -1,38 +1,48 @@
 # -*- coding: utf-8 -*-
 import pyltp
 import os
-LTP_DATA_DIR = '/Users/smap10/Project/Models/ltp_data_v3.4.0'  # ltp模型目录的路径
+
+# 可以将 LTP 模型目录路径作为配置项，方便修改
+LTP_DATA_DIR = 'C:/Users/86182//KGQA_SG-master/KGQA/ltp-models/ltp_data_v3.4.0'
 
 def cut_words(words):
+    """
+    分词函数
+    :param words: 输入的文本
+    :return: 分词后的列表
+    """
     segmentor = pyltp.Segmentor()
     seg_model_path = os.path.join(LTP_DATA_DIR, 'cws.model')
     segmentor.load(seg_model_path)
     words = segmentor.segment(words)
-    array_str="|".join(words)
-    array=array_str.split("|")
+    result = list(words)
     segmentor.release()
-    return array
-
+    return result
 
 def words_mark(array):
-
-    # 词性标注模型路径，模型名称为`pos.model`
+    """
+    词性标注函数
+    :param array: 分词后的列表
+    :return: 词性标注后的列表
+    """
     pos_model_path = os.path.join(LTP_DATA_DIR, 'pos.model')
-    postagger = pyltp.Postagger()  # 初始化实例
-    postagger.load(pos_model_path)  # 加载模型
-    postags = postagger.postag(array)  # 词性标注
-    pos_str=' '.join(postags)
-    pos_array=pos_str.split(" ")
-    postagger.release()  # 释放模型
-    return pos_array
+    postagger = pyltp.Postagger()
+    postagger.load(pos_model_path)
+    postags = postagger.postag(array)
+    result = list(postags)
+    postagger.release()
+    return result
 
 def get_target_array(words):
-    target_pos=['nh','n']
-    target_array=[]
-    seg_array=cut_words(words)
+    """
+    获取目标词汇数组
+    :param words: 输入的文本
+    :return: 目标词汇数组
+    """
+    target_pos = ['nh', 'n']
+    seg_array = cut_words(words)
     pos_array = words_mark(seg_array)
-    for i in range(len(pos_array)):
-        if pos_array[i] in target_pos:
-            target_array.append(seg_array[i])
-    target_array.append(seg_array[1])
+    target_array = [seg_array[i] for i in range(len(pos_array)) if pos_array[i] in target_pos]
+    if len(seg_array) > 1:
+        target_array.append(seg_array[1])
     return target_array
