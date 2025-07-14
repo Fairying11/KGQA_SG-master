@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>人物实体属性查询</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            text-align: center;
+            margin: 20px 0;
+        }
+        input {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>人物实体属性查询</h1>
+    <form id="attrForm">
+        <input type="text" id="keyword" placeholder="输入人物名称">
+        <button type="button" onclick="queryAttribute()">查询</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        function queryAttribute() {
+            const keyword = document.getElementById('keyword').value;
+            if (!keyword) {
+                alert('请输入人物名称');
+                return;
+            }
+            // 调用后端属性查询接口，假设接口是 /star/attribute （结合你之前代码里的接口）
+            fetch('/star/attribute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ "keyword": keyword })
+            })
+           .then(response => response.json())
+           .then(data => {
+                if (data.status === 200) {
+                    const resultDiv = document.getElementById('result');
+                    let html = `<p><strong>名称：</strong>${data.respon.name}</p>`;
+                    if (data.respon.summary) {
+                        html += `<p><strong>简介：</strong>${data.respon.summary}</p>`;
+                    }
+                    if (data.respon.basicInfo) {
+                        html += `<p><strong>基本信息：</strong>${JSON.stringify(data.respon.basicInfo)}</p>`;
+                    }
+                    if (data.respon.pic) {
+                        html += `<img src="${data.respon.pic}" alt="${data.respon.name}" style="max-width: 300px; margin-top: 10px;">`;
+                    }
+                    resultDiv.innerHTML = html;
+                } else {
+                    document.getElementById('result').innerHTML = '未查询到该人物属性信息';
+                }
+            })
+           .catch(error => {
+                console.error('查询出错：', error);
+                document.getElementById('result').innerHTML = '查询过程中出现错误，请重试';
+            });
+        }
+    </script>
+</body>
+</html>

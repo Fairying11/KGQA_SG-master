@@ -72,13 +72,13 @@
                 },
                 body: JSON.stringify({ "keyword": keyword })
             })
-            .then(response => {
+           .then(response => {
                 if (!response.ok) {
                     throw new Error("接口请求失败，请检查网络或后端服务");
                 }
                 return response.json();
             })
-            .then(data => {
+           .then(data => {
                 if (data.status === 200) {
                     // 调用渲染图谱函数
                     renderGraph(data.respon.nodes, data.respon.lines);
@@ -86,7 +86,7 @@
                     alert(`查询失败：${data.error}`);
                 }
             })
-            .catch(error => {
+           .catch(error => {
                 console.error("错误：", error);
                 alert("查询过程出错，请重试");
             });
@@ -94,61 +94,24 @@
 
         function renderGraph(nodes, links) {
             const option = {
-                tooltip: {
-                    formatter: function (params) {
-                        return params.data.text || params.data.name;
-                    }
-                },
+                tooltip: {},
                 series: [
                     {
                         type: 'graph',
                         layout: 'force',
-                        force: {
-                            repulsion: 300,
-                            edgeLength: 100
-                        },
-                        roam: true, // 允许缩放和平移
+                        data: nodes,
+                        links: links,
                         label: {
-                            show: true,
-                            color: '#333'
+                            show: true
                         },
-                        lineStyle: {
-                            color: '#43a2f1',
-                            width: 2
-                        },
-                        data: nodes.map(node => ({
-                            id: node.id,
-                            name: node.text,
-                            itemStyle: {
-                                color: node.color,
-                                borderColor: '#fff',
-                                borderWidth: 2
-                            },
-                            label: {
-                                color: node.fontColor
-                            }
-                        })),
-                        links: links.map(link => ({
-                            source: link.from,
-                            target: link.to,
-                            label: {
-                                show: true,
-                                formatter: link.text,
-                                fontSize: 12
-                            }
-                        }))
+                        force: {
+                            repulsion: 100
+                        }
                     }
                 ]
             };
-
             chart.setOption(option);
         }
-
-        // 监听窗口大小变化，让图谱自适应
-        window.addEventListener('resize', () => {
-            chart.resize();
-        });
     </script>
 </body>
-
 </html>

@@ -9,7 +9,7 @@ class GraphQuery:
         self.driver.close()
 
     def get_entity_attribute(self, keyword):
-        """实体属性查询接口实现{insert\_element\_4\_}"""
+        """实体属性查询接口实现{insert_element_4_}"""
         with self.driver.session() as session:
             result = session.run("""
                 MATCH (p:Person {name: $keyword})
@@ -36,37 +36,35 @@ class GraphQuery:
             return None
 
     def get_relations(self, keyword):
-        """关系查询接口实现{insert\_element\_5\_}"""
+        """关系查询接口实现{insert_element_5_}"""
         with self.driver.session() as session:
             result = session.run("""
                 MATCH (s:Person {name: $keyword})-[r:RELATION]->(o:Person)
                 RETURN s.name AS subj,
                        o.name AS obj,
-                       r.type AS rel_type,
-                       id(s) AS subj_id,
-                       id(o) AS obj_id
+                       r.type AS rel_type
             """, keyword=keyword)
             nodes = []
             lines = []
             node_ids = set()
             # 添加中心节点
-            center_node = {"id": id(keyword), "text": keyword, "color": "#43a2f1", "fontColor": "yellow"}
+            center_node = {"id": keyword, "text": keyword, "color": "#43a2f1", "fontColor": "yellow"}
             nodes.append(center_node)
             node_ids.add(keyword)
-            
+
             for record in result:
                 obj = record["obj"]
                 if obj not in node_ids:
-                    nodes.append({"id": record["obj_id"], "text": obj, "color": "#43a2f1", "fontColor": "yellow"})
+                    nodes.append({"id": obj, "text": obj, "color": "#43a2f1", "fontColor": "yellow"})
                     node_ids.add(obj)
                 lines.append({
-                    "from": id(keyword),
-                    "to": record["obj_id"],
+                    "from": keyword,
+                    "to": obj,
                     "text": record["rel_type"],
                     "color": "#43a2f1"
                 })
             return {
-                "rootId": id(keyword),
+                "rootId": keyword,
                 "nodes": nodes,
                 "lines": lines
             }

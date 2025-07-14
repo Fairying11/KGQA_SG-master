@@ -1,9 +1,8 @@
-# neo_db/create_graph.py
 import json
 import logging
 from config import driver
 
-# 配置日志（对应步骤2-14、2-26）
+# 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def import_baike_data(file_path):
@@ -13,13 +12,13 @@ def import_baike_data(file_path):
         session.run("MATCH (n) DETACH DELETE n")
         logging.info("已清空数据库现有数据")
 
-        with open(file_path, 'r', encoding='utf-8') as f:  # 处理UTF-8编码，对应步骤2-18
+        with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 try:
                     data = json.loads(line.strip())
                     name = data["name"]
 
-                    # 创建人物实体节点（对应步骤2-14）
+                    # 创建人物实体节点
                     session.run("""
                         MERGE (p:Person {name: $name})
                         SET p.summary = $summary,
@@ -33,9 +32,9 @@ def import_baike_data(file_path):
                        pic=data.get("pic", ""))
                     logging.info(f"已导入实体: {name}")
 
-                    # 导入人物关系（对应步骤2-26）
+                    # 导入人物关系
                     for rel in data.get("peoplerelations", []):
-                        # 解析关系数据（格式："姓名1#关系#姓名2#地址"，对应步骤2-20）
+                        # 解析关系数据
                         parts = rel.split('#')
                         if len(parts) < 3:
                             logging.warning(f"无效关系数据: {rel}")
@@ -52,7 +51,7 @@ def import_baike_data(file_path):
                     logging.error(f"处理数据时出错: {e}，数据行: {line}")
 
 if __name__ == "__main__":
-    # 导入主要人物和补充人物数据（对应步骤2-16、2-17）
+    # 导入主要人物和补充人物数据
     import_baike_data("../raw_data/baike_data.txt")
     import_baike_data("../raw_data/baike_append_data.txt")
     driver.close()

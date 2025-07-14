@@ -17,7 +17,7 @@
     </div>
 
     <script>
-        // 调用关系查询接口（对应步骤2-30、2-43）
+        // 调用关系查询接口
         function queryRelation() {
             const keyword = $("#keyword").val().trim();
             if (!keyword) return alert("请输入人物名称");
@@ -37,25 +37,25 @@
             });
         }
 
-        // 可视化图谱（对应步骤2-45）
+        // 可视化图谱
         function renderGraph(data) {
-            const chart = echarts.init(document.getElementById("graph"));
+            const chart = echarts.init(document.getElementById('graph'));
             const option = {
-                series: [{
-                    type: "graph",
-                    layout: "force",
-                    force: { repulsion: 200 },
-                    nodes: data.nodes.map(node => ({
-                        name: node.text,
-                        id: node.id,
-                        symbolSize: 50
-                    })),
-                    links: data.lines.map(line => ({
-                        source: line.from,
-                        target: line.to,
-                        label: { show: true, formatter: line.text }
-                    }))
-                }]
+                tooltip: {},
+                series: [
+                    {
+                        type: 'graph',
+                        layout: 'force',
+                        data: data.nodes,
+                        links: data.lines,
+                        label: {
+                            show: true
+                        },
+                        force: {
+                            repulsion: 100
+                        }
+                    }
+                ]
             };
             chart.setOption(option);
         }

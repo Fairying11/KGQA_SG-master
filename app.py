@@ -40,12 +40,12 @@ def get_relations():
 
     cypher = """
     MATCH (s:Person {name: $keyword})-[r:RELATION]->(o:Person)
-    RETURN s.name AS source, o.name AS target, r.type AS relation, id(s) AS s_id, id(o) AS o_id
+    RETURN s.name AS source, o.name AS target, r.type AS relation
     """
     result = query_neo4j(cypher, {"keyword": keyword})
-    nodes = [{"id": r["s_id"], "text": r["source"]} for r in result] + \
-            [{"id": r["o_id"], "text": r["target"]} for r in result]
-    links = [{"from": r["s_id"], "to": r["o_id"], "text": r["relation"]} for r in result]
+    nodes = [{"id": r["source"], "text": r["source"]} for r in result] + \
+            [{"id": r["target"], "text": r["target"]} for r in result]
+    links = [{"from": r["source"], "to": r["target"], "text": r["relation"]} for r in result]
     return jsonify({"status": 200, "respon": {"nodes": nodes, "lines": links}})
 
 # 页面路由
@@ -57,9 +57,13 @@ def index():
 def search_page():
     return render_template('search.html')
 
+@app.route('/search_attribute')
+def search_attribute_page():
+    return render_template('search_attribute.html')
+
 @app.route('/KGQA')
 def kgqa_page():
     return render_template('KGQA.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)  # 避免与Neo4j端口冲突{insert\_element\_0\_}
+    app.run(host='0.0.0.0', port=5001, debug=True)  # 避免与Neo4j端口冲突
