@@ -19,7 +19,7 @@
     </style>
 </head>
 <body>
-    <!-- 导航栏（修复路由名称） -->
+    <!-- 导航栏 -->
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -30,7 +30,7 @@
                     <li class="active"><a href="{{ url_for('index') }}">首页</a></li>
                     <li><a href="{{ url_for('search_page') }}">关系查询</a></li>
                     <li><a href="{{ url_for('search_attribute_page') }}">属性查询</a></li>
-                    <li><a href="{{ url_for('KGQA') }}">智能问答</a></li>
+                    <li><a href="{{ url_for('KGQA') }}">智能问答</a></li>  <!-- 保持不变 -->
                 </ul>
             </div>
         </div>
@@ -61,7 +61,7 @@
             <div class="col-md-4 feature">
                 <span class="fa fa-comments fa-5x text-info"></span>
                 <h3>智能问答</h3>
-                <p>通过自然语言查询三国知识，如"刘备的谋士有哪些？"</p>
+                <p>通过自然语言查询三国知识，如"刘备的妻子是谁？"</p>
                 <a href="{{ url_for('KGQA') }}" class="btn btn-default">查看示例</a>
             </div>
         </div>

@@ -113,7 +113,7 @@ def search_attribute_page():
     return render_template('search_attribute.html')
 
 @app.route('/KGQA')
-def kgqa_page():
+def KGQA():  # 修改函数名与模板中的url_for('KGQA')一致
     return render_template('KGQA.html')
 
 @app.errorhandler(404)
