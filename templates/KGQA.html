@@ -1,294 +1,155 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>基于知识图谱的《三国演义》人物关系可视化及问答系统</title>
-
-    <!--Bootstrap Stylesheet [ REQUIRED ]-->
+    <meta charset="UTF-8">
+    <title>知识问答</title>
     <link href="../static/css/bootstrap.min.css" rel="stylesheet">
-
-    <link rel="shortcut icon" href="../static/images/logo.jpg">
-    <!--Nifty Stylesheet [ REQUIRED ]-->
     <link href="../static/css/nifty.min.css" rel="stylesheet">
-
-    <!--Nifty Premium Icon [ DEMONSTRATION ]-->
-    <link href="../static/css/nifty-demo-icons.min.css" rel="stylesheet">
-
-    <!--Demo [ DEMONSTRATION ]-->
-    <link href="../static/css/nifty-demo-icons.min.css" rel="stylesheet">
-    <link href="../static/css/nifty-demo.min.css" rel="stylesheet">
-    <link href="../static/css/font-awesome.min.css" rel="stylesheet">
-    <link href="../static/css/wiki.css" rel="stylesheet">
-
-    <!--JAVASCRIPT-->
-    <!--=================================================-->
-
-    <!--Pace - Page Load Progress Par [OPTIONAL]-->
-    <link href="../static/css/pace.min.css" rel="stylesheet">
-    <script src="../static/js/pace.min.js"></script>
-
-    <!--jQuery [ REQUIRED ]-->
-    <script src="../static/js/jquery-2.2.4.min.js"></script>
-
-    <!--BootstrapJS [ RECOMMENDED ]-->
-    <script src="../static/js/bootstrap.min.js"></script>
-
-    <!--NiftyJS [ RECOMMENDED ]-->
-    <script src="../static/js/nifty.min.js"></script>
-    <script src="../static/js/icons.js"></script>
-    <script src="../static/js/echarts.min.js"></script>
-
-    <!--=================================================-->
-
-    <!--Demo script [ DEMONSTRATION ]-->
-    <script src="../static/js/nifty-demo.min.js"></script>
-
+    <style>
+        .chat-container {
+            margin-top: 50px;
+        }
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .user-message, .bot-message {
+            margin-bottom: 10px;
+        }
+        .user-message .message-content {
+            background-color: #dcf8c6;
+            padding: 8px 12px;
+            border-radius: 18px;
+            display: inline-block;
+        }
+        .bot-message .message-content {
+            background-color: #f1f0f0;
+            padding: 8px 12px;
+            border-radius: 18px;
+            display: inline-block;
+        }
+    </style>
 </head>
-
 <body>
-
-    <div id="container" class="effect aside-float aside-bright mainnav-lg">
-
-        <!--NAVBAR-->
-        <!--===================================================-->
-        <header id="navbar">
-            <div id="navbar-container" class="boxed">
-
-                <!--Brand logo & name-->
-                <!--================================-->
-                <div class="navbar-header">
-                    <a href="{{ url_for('index') }}" class="navbar-brand">
-                        <img src="../static/images/logo.jpg" alt="Nifty Logo" class="brand-icon">
-                        <div class="brand-title">
-                            <span class="brand-text">林智敏毕设</span>
-                        </div>
-                    </a>
-                </div>
-                <!--================================-->
-                <!--End brand logo & name-->
-
-                <!--Navbar Dropdown-->
-                <!--================================-->
-                <div class="navbar-content clearfix">
-                    <ul class="nav navbar-top-links pull-left">
-
-                        <!--Navigation toogle button-->
-                        <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
-                        <li class="tgl-menu-btn">
-                            <a class="mainnav-toggle" href="#">
-                                <i class="demo-pli-view-list"></i>
-                            </a>
-                        </li>
-
-                    </ul>
-                    <ul class="nav navbar-top-links pull-left">
-                        <h4>基于知识图谱的《三国演义》人物关系可视化及问答系统</h4>
-                    </ul>
-                </div>
-                <!--================================-->
-                <!--End Navbar Dropdown-->
-
+    <!-- 导航栏（修复路由名称） -->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">三国演义知识图谱</a>
             </div>
-        </header>
-        <!--===================================================-->
-        <!--END NAVBAR-->
-
-        <div class="boxed">
-
-            <!--CONTENT CONTAINER-->
-            <!--===================================================-->
-            <div id="content-container">
-
-                <!--Page content-->
-                <!--===================================================-->
-                <div id="page-content">
-
-                    <h4 class="text-main pad-btm bord-btm">问答系统</h4>
-
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="input-group">
-                                <input type="text" id="search" class="form-control input-lg"
-                                    placeholder="请输入你的问题(eg.贾宝玉的爸爸是谁？)">
-                                <span class="input-group-addon btn btn-primary" onclick="search()">搜索</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row" style="height: 40px;"></div>
-                    <div class="row">
-                        <div class="col-lg-6" style="height: 400px;" id="guanxi">
-
-                            <script type="text/javascript">
-                                $(document).keypress(function (e) {
-                                    // 回车键事件
-                                    if (e.which == 13) {
-                                        search();
-                                    }
-                                });
-                                window.onresize = function () {
-                                    myChart.resize();
-                                };
-
-                                $.ajaxSetup({ async: false });
-                                var myChart = echarts.init(document.getElementById("guanxi"));
-                                myChart.showLoading();
-
-                                myChart.hideLoading();
-                                option = {
-                                    backgroundColor: "white",
-                                    title: {
-                                        text: '三国演义人物关系图',
-                                        textStyle: {
-                                            color: "black",
-                                            fontWeight: "lighter",
-                                        }
-                                    },
-                                    animationDurationUpdate: 1500,
-                                    animationEasingUpdate: 'quinticInOut',
-                                    legend: {
-                                        x: "center",
-                                        show: true,
-                                        data: ["魏国", "蜀国", "吴国", "群雄"]
-                                    },
-                                    series: [
-                                        {
-                                            type: 'graph',
-                                            layout: 'force',
-                                            symbolSize: 50,
-                                            edgeSymbol: ['circle', 'arrow'],
-                                            edgeSymbolSize: [4, 4],
-                                            edgeLabel: {
-                                                normal: {
-                                                    show: true,
-                                                    textStyle: {
-                                                        fontSize: 10
-                                                    },
-                                                    formatter: "{c}"
-                                                }
-                                            },
-                                            force: {
-                                                repulsion: 2500,
-                                                edgeLength: [10, 100]
-                                            },
-                                            focusNodeAdjacency: true,
-                                            draggable: true,
-                                            roam: true,
-                                            categories: [
-                                                {
-                                                    name: '魏国',
-                                                    itemStyle: {
-                                                        normal: {
-                                                            color: "#009800",
-                                                        }
-                                                    }
-                                                },
-                                                {
-                                                    name: '蜀国',
-                                                    itemStyle: {
-                                                        normal: {
-                                                            color: "#4592FF",
-                                                        }
-                                                    }
-                                                },
-                                                {
-                                                    name: '吴国',
-                                                    itemStyle: {
-                                                        normal: {
-                                                            color: "#FFA500",
-                                                        }
-                                                    }
-                                                },
-                                                {
-                                                    name: '群雄',
-                                                    itemStyle: {
-                                                        normal: {
-                                                            color: "#808080",
-                                                        }
-                                                    }
-                                                }
-                                            ],
-                                            label: {
-                                                normal: {
-                                                    show: true,
-                                                    textStyle: {
-                                                        fontSize: 10
-                                                    },
-                                                }
-                                            }
-                                        }
-                                    ]
-                                };
-                                myChart.setOption(option);
-
-                                function search() {
-                                    var question = document.getElementById("search").value;
-                                    // 发送请求到后端处理问题
-                                    $.ajax({
-                                        url: "/answer",
-                                        type: "POST",
-                                        data: { question: question },
-                                        success: function (response) {
-                                            // 更新可视化界面
-                                            // 这里需要根据后端返回的数据更新 option 中的数据
-                                            myChart.setOption(option);
-                                        },
-                                        error: function () {
-                                            alert("查询失败，请稍后重试。");
-                                        }
-                                    });
-                                }
-                            </script>
-                        </div>
-                        <div class="col-lg-1"></div>
-                        <div class="col-lg-4">
-                            <div class="row" style="width:200px;height:200px;">
-                                <img id="picture" style="display:none;width:200px;height:200px;" src="" >
-                            </div>
-                            <div class="row">
-                                <div class="basic-info ">
-                                    <dl class="basicInfo-block basicInfo-left" id="profile" >
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <!--===================================================-->
-                <!--End page content-->
-
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{ url_for('index') }}">首页</a></li>
+                    <li><a href="{{ url_for('search_page') }}">关系查询</a></li>
+                    <li><a href="{{ url_for('search_attribute_page') }}">属性查询</a></li>
+                    <li class="active"><a href="{{ url_for('KGQA') }}">智能问答</a></li>
+                </ul>
             </div>
-            <!--===================================================-->
-            <!--END CONTENT CONTAINER-->
+        </div>
+    </nav>
 
-            <!--MAIN NAVIGATION-->
-            <!--===================================================-->
-            <nav id="mainnav-container">
-                <div id="mainnav">
+    <div class="container chat-container">
+        <h3>三国演义知识问答</h3>
 
-                    <!--Menu-->
-                    <!--================================-->
-                    <div id="mainnav-menu-wrap">
-                        <div class="nano">
-                            <div class="nano-content">
-
-                            </div>
-                        </div>
-                    </div>
-                    <!--================================-->
-                    <!--End menu-->
-
+        <div class="chat-box" id="chatBox">
+            <div class="bot-message">
+                <div class="message-content">
+                    你好！我是三国知识助手。请问有什么关于《三国演义》的问题我可以帮你解答吗？
+                    <br>例如："刘备的妻子是谁？" 或 "诸葛亮的主公是谁？"
                 </div>
-            </nav>
-            <!--===================================================-->
-            <!--END MAIN NAVIGATION-->
-
+            </div>
         </div>
 
+        <div class="input-group">
+            <input type="text" id="question" class="form-control" placeholder="请输入你的问题...">
+            <span class="input-group-btn">
+                <button class="btn btn-primary" id="sendBtn">提问</button>
+            </span>
+        </div>
     </div>
 
-</body>
+    <script src="../static/js/jquery-2.2.4.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 绑定发送按钮事件
+            $("#sendBtn").click(function() {
+                sendQuestion();
+            });
 
+            // 支持回车键发送
+            $("#question").keypress(function(e) {
+                if (e.which == 13) {
+                    sendQuestion();
+                }
+            });
+
+            function sendQuestion() {
+                var question = $("#question").val().trim();
+                if (!question) {
+                    return;
+                }
+
+                // 显示用户问题
+                $("#chatBox").append(`
+                    <div class="user-message">
+                        <div class="message-content">${question}</div>
+                    </div>
+                `);
+                $("#question").val("");
+                scrollToBottom();
+
+                // 显示加载状态
+                var loadingId = "loading-" + Date.now();
+                $("#chatBox").append(`
+                    <div class="bot-message" id="${loadingId}">
+                        <div class="message-content">思考中...</div>
+                    </div>
+                `);
+                scrollToBottom();
+
+                // 发送请求
+                $.ajax({
+                    url: "/answer",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ question: question }),
+                    success: function(response) {
+                        // 移除加载状态
+                        $("#" + loadingId).remove();
+
+                        // 显示回答
+                        var answer = response.answer || "抱歉，我无法回答这个问题。";
+                        $("#chatBox").append(`
+                            <div class="bot-message">
+                                <div class="message-content">${answer}</div>
+                            </div>
+                        `);
+                        scrollToBottom();
+                    },
+                    error: function() {
+                        // 移除加载状态
+                        $("#" + loadingId).remove();
+
+                        // 显示错误信息
+                        $("#chatBox").append(`
+                            <div class="bot-message">
+                                <div class="message-content">抱歉，查询出错，请重试。</div>
+                            </div>
+                        `);
+                        scrollToBottom();
+                    }
+                });
+            }
+
+            function scrollToBottom() {
+                var chatBox = $("#chatBox");
+                chatBox.scrollTop(chatBox.prop("scrollHeight"));
+            }
+        });
+    </script>
+</body>
 </html>

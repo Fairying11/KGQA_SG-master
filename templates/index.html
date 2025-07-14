@@ -2,180 +2,99 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人物关系知识图谱系统</title>
+    <title>三国演义知识图谱</title>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/css/nifty.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f0f2f5;
-            color: #333;
-            line-height: 1.6;
-        }
-
-       .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
+        .hero {
             text-align: center;
-            padding: 60px 0;
-            background: linear-gradient(135deg, #43a2f1 0%, #287bcc 100%);
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 40px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 100px 0;
+            background-color: #f8f9fa;
+            margin-bottom: 30px;
         }
-
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-        }
-
-        header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-       .features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 30px;
-            justify-content: center;
-            margin-bottom: 60px;
-        }
-
-       .feature-card {
-            background-color: white;
-            border-radius: 10px;
+        .feature {
+            text-align: center;
             padding: 30px;
-            width: 320px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-       .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-
-       .feature-icon {
-            width: 60px;
-            height: 60px;
-            background-color: #e8f4fd;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-       .feature-icon i {
-            font-size: 1.8rem;
-            color: #43a2f1;
-        }
-
-       .feature-card h2 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-        }
-
-       .feature-card p {
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-       .btn {
-            display: inline-block;
-            background-color: #43a2f1;
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: 500;
-            transition: background-color 0.3s ease;
-        }
-
-       .btn:hover {
-            background-color: #3088d4;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px 0;
-            color: #7f8c8d;
-            border-top: 1px solid #e1e4e8;
-        }
-
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2rem;
-            }
-
-           .features {
-                flex-direction: column;
-                align-items: center;
-            }
-
-           .feature-card {
-                width: 100%;
-                max-width: 400px;
-            }
         }
     </style>
-    <!-- 引入图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    <!-- 导航栏（修复路由名称） -->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">三国演义知识图谱</a>
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="{{ url_for('index') }}">首页</a></li>
+                    <li><a href="{{ url_for('search_page') }}">关系查询</a></li>
+                    <li><a href="{{ url_for('search_attribute_page') }}">属性查询</a></li>
+                    <li><a href="{{ url_for('KGQA') }}">智能问答</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
-        <header>
-            <h1>人物关系知识图谱系统</h1>
-            <p>探索历史人物之间的关联网络，深入了解人物背景与关系脉络</p>
-        </header>
+        <div class="hero">
+            <h1>三国演义知识图谱</h1>
+            <p class="lead">探索三国人物关系与属性的交互式知识图谱</p>
+            <a href="{{ url_for('search_page') }}" class="btn btn-primary btn-lg">开始探索</a>
+        </div>
 
-        <section class="features">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-project-diagram"></i>
-                </div>
-                <h2>关系图谱可视化</h2>
-                <p>以图形化方式展示人物之间的关联关系，支持节点展开、缩放和平移操作，直观呈现人物网络。</p>
-                <a href="/search" class="btn">进入图谱页面</a>
+        <div class="row">
+            <div class="col-md-4 feature">
+                <span class="fa fa-sitemap fa-5x text-primary"></span>
+                <h3>关系查询</h3>
+                <p>可视化展示三国人物之间的复杂关系，如主公、下属、盟友等</p>
+                <a href="{{ url_for('search_page') }}" class="btn btn-default">查看示例</a>
             </div>
 
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-info-circle"></i>
-                </div>
-                <h2>人物属性查询</h2>
-                <p>查询历史人物的详细属性信息，包括别名、所处时代、籍贯及简介等，全方位了解人物背景。</p>
-                <a href="/search_attribute" class="btn">查询人物属性</a>
+            <div class="col-md-4 feature">
+                <span class="fa fa-user fa-5x text-success"></span>
+                <h3>属性查询</h3>
+                <p>查询三国人物的详细信息，包括生卒年、籍贯、官职等</p>
+                <a href="{{ url_for('search_attribute_page') }}" class="btn btn-default">查看示例</a>
             </div>
 
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-question-circle"></i>
-                </div>
-                <h2>知识问答系统</h2>
-                <p>通过自然语言提问，获取关于人物关系和属性的精准答案，轻松获取所需知识。</p>
-                <a href="/KGQA" class="btn">进入问答页面</a>
+            <div class="col-md-4 feature">
+                <span class="fa fa-comments fa-5x text-info"></span>
+                <h3>智能问答</h3>
+                <p>通过自然语言查询三国知识，如"刘备的谋士有哪些？"</p>
+                <a href="{{ url_for('KGQA') }}" class="btn btn-default">查看示例</a>
             </div>
-        </section>
+        </div>
 
-        <footer>
-            <p>© 2025 人物关系知识图谱系统 | 基于Neo4j与Flask开发</p>
-        </footer>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">知识图谱简介</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>本系统基于《三国演义》构建知识图谱，包含人物、地点、事件等实体及其关系。</p>
+                        <p>主要功能包括：</p>
+                        <ul>
+                            <li>可视化展示人物关系网络</li>
+                            <li>查询人物详细属性信息</li>
+                            <li>通过自然语言进行知识问答</li>
+                            <li>支持关系路径分析和推荐</li>
+                        </ul>
+                        <p>数据来源：《三国演义》原著及相关历史资料</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="text-center">三国演义知识图谱 &copy; 2025</p>
+        </div>
+    </footer>
+
+    <script src="../static/js/jquery-2.2.4.min.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
 </body>
 </html>

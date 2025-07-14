@@ -2,126 +2,127 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人物实体属性查询</title>
+    <title>人物属性查询</title>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/css/nifty.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
+        .search-container {
+            margin-top: 50px;
             text-align: center;
-            color: #333;
         }
-       .query-box {
-            text-align: center;
-            margin: 30px 0;
-        }
-        #keyword {
-            padding: 10px;
-            width: 300px;
-            font-size: 16px;
-            border: 2px solid #43a2f1;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #43a2f1;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-left: 10px;
-        }
-        button:hover {
-            background-color: #3088d4;
-        }
-       .result-box {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 300px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-       .info-item {
-            margin: 15px 0;
-        }
-       .info-label {
-            font-weight: bold;
-            color: #555;
-        }
-        img {
-            max-width: 300px;
-            margin-top: 20px;
-            border-radius: 4px;
+        .result-container {
+            margin-top: 30px;
         }
     </style>
-    <script src="/static/js/jquery-2.2.4.min.js"></script>
 </head>
 <body>
-    <h1>人物实体属性查询</h1>
-    <div class="query-box">
-        <input type="text" id="keyword" placeholder="请输入人物名称（如：李白）" value="李白">
-        <button onclick="queryAttribute()">查询属性</button>
+    <!-- 导航栏（修复路由名称） -->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">三国演义知识图谱</a>
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{ url_for('index') }}">首页</a></li>
+                    <li><a href="{{ url_for('search_page') }}">关系查询</a></li>
+                    <li class="active"><a href="{{ url_for('search_attribute_page') }}">属性查询</a></li>
+                    <li><a href="{{ url_for('KGQA') }}">智能问答</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="search-container">
+            <h3>人物属性查询</h3>
+            <div class="input-group input-group-lg col-md-6 col-md-offset-3">
+                <input type="text" id="keyword" class="form-control" placeholder="请输入人物名称">
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" id="searchBtn">查询</button>
+                </span>
+            </div>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <!-- 结果将在这里显示 -->
+        </div>
     </div>
-    <div class="result-box" id="result"></div>
 
+    <script src="../static/js/jquery-2.2.4.min.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
     <script>
-        function queryAttribute() {
-            const keyword = $('#keyword').val().trim();
-            if (!keyword) {
-                alert('请输入人物名称');
-                return;
-            }
+        $(document).ready(function() {
+            // 绑定查询按钮事件
+            $("#searchBtn").click(function() {
+                var keyword = $("#keyword").val().trim();
+                if (!keyword) {
+                    alert("请输入人物名称");
+                    return;
+                }
 
-            $.ajax({
-                url: '/star/attribute',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ "keyword": keyword }),
-                success: function(res) {
-                    if (res.status === 200) {
-                        const data = res.respon;
-                        let html = `
-                            <h2>${data.name}</h2>
-                            <div class="info-item">
-                                <span class="info-label">简介：</span>
-                                <span>${data.summary}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">基本信息：</span>
-                                <ul>
-                                    <li>别名：${data.basicInfo.别名}</li>
-                                    <li>所处时代：${data.basicInfo.所处时代}</li>
-                                    <li>籍贯：${data.basicInfo.籍贯}</li>
-                                </ul>
-                            </div>
-                        `;
-                        // 显示图片（如果有）
-                        if (data.pic) {
-                            html += `<div class="info-item">
-                                <span class="info-label">人物图片：</span>
-                                <br>
-                                <img src="${data.pic}" alt="${data.name}">
-                            </div>`;
+                // 发送AJAX请求
+                $.ajax({
+                    url: "/star/attribute",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ keyword: keyword }),
+                    success: function(response) {
+                        if (response.status === 200) {
+                            showResult(response.respon);
+                        } else {
+                            $("#resultContainer").html("<div class='alert alert-danger'>未找到该人物信息</div>");
                         }
-                        $('#result').html(html);
-                    } else {
-                        $('#result').html(`<p style="color: red;">${res.respon}</p>`);
+                    },
+                    error: function() {
+                        $("#resultContainer").html("<div class='alert alert-danger'>查询失败，请稍后重试</div>");
                     }
-                },
-                error: function(xhr) {
-                    $('#result').html(`<p style="color: red;">请求失败：${xhr.statusText}</p>`);
+                });
+            });
+
+            // 支持回车键
+            $("#keyword").keypress(function(e) {
+                if (e.which == 13) {
+                    $("#searchBtn").click();
                 }
             });
-        }
 
-        // 页面加载后自动查询
-        $(function() {
-            queryAttribute();
+            // 显示查询结果
+            function showResult(data) {
+                var html = `
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">${data.name}</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <img src="${data.pic}" alt="${data.name}" class="img-responsive">
+                                </div>
+                                <div class="col-md-9">
+                                    <dl class="dl-horizontal">
+                `;
+
+                // 显示基本信息
+                for (var key in data.basicInfo) {
+                    html += `
+                        <dt>${key}</dt>
+                        <dd>${data.basicInfo[key]}</dd>
+                    `;
+                }
+
+                html += `
+                                    </dl>
+                                    <h4>人物简介</h4>
+                                    <p>${data.summary}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                $("#resultContainer").html(html);
+            }
         });
     </script>
 </body>

@@ -1,64 +1,167 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <title>人物关系查询</title>
-    <script src="{{ url_for('static', filename='js/jquery-2.2.4.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/css/nifty.min.css" rel="stylesheet">
+    <style>
+        .search-container {
+            margin-top: 50px;
+            text-align: center;
+        }
+        #relationGraph {
+            width: 100%;
+            height: 600px;
+            margin-top: 30px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h3>人物关系查询</h3>
-        <div class="input-group">
-            <input type="text" id="keyword" placeholder="输入人物名称">
-            <button onclick="queryRelation()">查询</button>
+    <!-- 导航栏（修复路由名称） -->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">三国演义知识图谱</a>
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{ url_for('index') }}">首页</a></li>
+                    <li class="active"><a href="{{ url_for('search_page') }}">关系查询</a></li>
+                    <li><a href="{{ url_for('search_attribute_page') }}">属性查询</a></li>
+                    <li><a href="{{ url_for('KGQA') }}">智能问答</a></li>
+                </ul>
+            </div>
         </div>
-        <div id="graph" style="width: 100%; height: 600px; margin-top: 20px;"></div>
+    </nav>
+
+    <div class="container">
+        <div class="search-container">
+            <h3>人物关系查询</h3>
+            <div class="input-group input-group-lg col-md-6 col-md-offset-3">
+                <input type="text" id="keyword" class="form-control" placeholder="请输入人物名称（如：刘备）">
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" id="searchBtn">查询关系</button>
+                </span>
+            </div>
+        </div>
+
+        <!-- 关系图容器 -->
+        <div id="relationGraph"></div>
     </div>
 
+    <script src="../static/js/jquery-2.2.4.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
     <script>
-        // 调用关系查询接口
-        function queryRelation() {
-            const keyword = $("#keyword").val().trim();
-            if (!keyword) return alert("请输入人物名称");
+        // 初始化关系图
+        const graphDom = document.getElementById('relationGraph');
+        const myChart = echarts.init(graphDom);
+        let option = {
+            tooltip: {},
+            animationDuration: 1500,
+            animationEasingUpdate: 'quinticInOut',
+            series: [
+                {
+                    type: 'graph',
+                    layout: 'force',
+                    force: {
+                        repulsion: 300,
+                        edgeLength: 100
+                    },
+                    roam: true,  // 允许缩放和平移
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{b}'
+                    },
+                    lineStyle: {
+                        color: 'source',
+                        curveness: 0.3
+                    },
+                    emphasis: {
+                        focus: 'adjacency',
+                        lineStyle: {
+                            width: 5
+                        }
+                    },
+                    data: [],  // 节点数据（后续动态填充）
+                    links: []   // 关系数据（后续动态填充）
+                }
+            ]
+        };
+        myChart.setOption(option);
 
+        // 绑定查询按钮事件
+        $('#searchBtn').click(function() {
+            const keyword = $('#keyword').val().trim();
+            if (!keyword) {
+                alert('请输入人物名称');
+                return;
+            }
+
+            // 发送请求获取关系数据
             $.ajax({
-                url: "/relationship",
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ "keyword": keyword }),
-                success: function(res) {
-                    if (res.status === 200) {
-                        renderGraph(res.respon);
+                url: '/relationship',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ keyword: keyword }),
+                success: function(response) {
+                    if (response.status === 200 && response.respon.nodes.length > 0) {
+                        // 处理节点数据（去重）
+                        const nodeMap = new Map();
+                        response.respon.nodes.forEach(node => {
+                            if (!nodeMap.has(node.id)) {
+                                nodeMap.set(node.id, {
+                                    name: node.text,
+                                    id: node.id,
+                                    symbolSize: node.text === keyword ? 60 : 50,  // 中心节点放大
+                                    itemStyle: {
+                                        color: node.text === keyword ? '#ff4500' : '#436eee'  // 中心节点标红
+                                    }
+                                });
+                            }
+                        });
+                        const nodes = Array.from(nodeMap.values());
+
+                        // 处理关系数据
+                        const links = response.respon.lines.map(line => ({
+                            source: line.from,
+                            target: line.to,
+                            label: {
+                                show: true,
+                                formatter: line.text
+                            }
+                        }));
+
+                        // 更新图表数据
+                        myChart.setOption({
+                            series: [{
+                                data: nodes,
+                                links: links
+                            }]
+                        });
                     } else {
-                        alert("未找到相关数据");
+                        // 无数据时显示提示
+                        myChart.setOption({
+                            series: [{
+                                data: [{ name: `未找到${keyword}的关系数据` }],
+                                links: []
+                            }]
+                        });
                     }
+                },
+                error: function() {
+                    alert('查询失败，请重试');
                 }
             });
-        }
+        });
 
-        // 可视化图谱
-        function renderGraph(data) {
-            const chart = echarts.init(document.getElementById('graph'));
-            const option = {
-                tooltip: {},
-                series: [
-                    {
-                        type: 'graph',
-                        layout: 'force',
-                        data: data.nodes,
-                        links: data.lines,
-                        label: {
-                            show: true
-                        },
-                        force: {
-                            repulsion: 100
-                        }
-                    }
-                ]
-            };
-            chart.setOption(option);
-        }
+        // 支持回车键查询
+        $('#keyword').keypress(function(e) {
+            if (e.which === 13) {
+                $('#searchBtn').click();
+            }
+        });
     </script>
 </body>
 </html>
