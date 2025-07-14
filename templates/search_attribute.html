@@ -2,85 +2,127 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>人物实体属性查询</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
             padding: 20px;
         }
         h1 {
             text-align: center;
+            color: #333;
         }
-        form {
+       .query-box {
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
         }
-        input {
-            padding: 8px;
-            margin-right: 10px;
+        #keyword {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
+            border: 2px solid #43a2f1;
+            border-radius: 4px;
         }
         button {
-            padding: 8px 15px;
-            background-color: #007bff;
+            padding: 10px 20px;
+            background-color: #43a2f1;
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
         }
-        #result {
+        button:hover {
+            background-color: #3088d4;
+        }
+       .result-box {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 300px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+       .info-item {
+            margin: 15px 0;
+        }
+       .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        img {
+            max-width: 300px;
             margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            min-height: 100px;
+            border-radius: 4px;
         }
     </style>
+    <script src="/static/js/jquery-2.2.4.min.js"></script>
 </head>
 <body>
     <h1>人物实体属性查询</h1>
-    <form id="attrForm">
-        <input type="text" id="keyword" placeholder="输入人物名称">
-        <button type="button" onclick="queryAttribute()">查询</button>
-    </form>
-    <div id="result"></div>
+    <div class="query-box">
+        <input type="text" id="keyword" placeholder="请输入人物名称（如：李白）" value="李白">
+        <button onclick="queryAttribute()">查询属性</button>
+    </div>
+    <div class="result-box" id="result"></div>
 
     <script>
         function queryAttribute() {
-            const keyword = document.getElementById('keyword').value;
+            const keyword = $('#keyword').val().trim();
             if (!keyword) {
                 alert('请输入人物名称');
                 return;
             }
-            // 调用后端属性查询接口，假设接口是 /star/attribute （结合你之前代码里的接口）
-            fetch('/star/attribute', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+
+            $.ajax({
+                url: '/star/attribute',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ "keyword": keyword }),
+                success: function(res) {
+                    if (res.status === 200) {
+                        const data = res.respon;
+                        let html = `
+                            <h2>${data.name}</h2>
+                            <div class="info-item">
+                                <span class="info-label">简介：</span>
+                                <span>${data.summary}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">基本信息：</span>
+                                <ul>
+                                    <li>别名：${data.basicInfo.别名}</li>
+                                    <li>所处时代：${data.basicInfo.所处时代}</li>
+                                    <li>籍贯：${data.basicInfo.籍贯}</li>
+                                </ul>
+                            </div>
+                        `;
+                        // 显示图片（如果有）
+                        if (data.pic) {
+                            html += `<div class="info-item">
+                                <span class="info-label">人物图片：</span>
+                                <br>
+                                <img src="${data.pic}" alt="${data.name}">
+                            </div>`;
+                        }
+                        $('#result').html(html);
+                    } else {
+                        $('#result').html(`<p style="color: red;">${res.respon}</p>`);
+                    }
                 },
-                body: JSON.stringify({ "keyword": keyword })
-            })
-           .then(response => response.json())
-           .then(data => {
-                if (data.status === 200) {
-                    const resultDiv = document.getElementById('result');
-                    let html = `<p><strong>名称：</strong>${data.respon.name}</p>`;
-                    if (data.respon.summary) {
-                        html += `<p><strong>简介：</strong>${data.respon.summary}</p>`;
-                    }
-                    if (data.respon.basicInfo) {
-                        html += `<p><strong>基本信息：</strong>${JSON.stringify(data.respon.basicInfo)}</p>`;
-                    }
-                    if (data.respon.pic) {
-                        html += `<img src="${data.respon.pic}" alt="${data.respon.name}" style="max-width: 300px; margin-top: 10px;">`;
-                    }
-                    resultDiv.innerHTML = html;
-                } else {
-                    document.getElementById('result').innerHTML = '未查询到该人物属性信息';
+                error: function(xhr) {
+                    $('#result').html(`<p style="color: red;">请求失败：${xhr.statusText}</p>`);
                 }
-            })
-           .catch(error => {
-                console.error('查询出错：', error);
-                document.getElementById('result').innerHTML = '查询过程中出现错误，请重试';
             });
         }
+
+        // 页面加载后自动查询
+        $(function() {
+            queryAttribute();
+        });
     </script>
 </body>
 </html>

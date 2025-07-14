@@ -44,7 +44,18 @@ df['tail_group'] = df['tail'].map(lambda x:people_group[x])
 
 # 去除relation
 df = df.drop(['relation'], axis=1)
-
+def assign_group(people_group, group, group_name=''):
+    """
+    为人物分配势力组
+    :param people_group: 人物-势力组字典
+    :param group: 人物列表字符串
+    :param group_name: 势力组名称
+    :return: 更新后的人物-势力组字典
+    """
+    group = group.replace("'", '').split()
+    for people in group:
+        people_group[people] = group_name
+    return people_group
 # 保存结果为txt文件
 path = '../raw_data/triples_processed.txt'
 df.to_csv(path, header=None, index=None, sep=',')
